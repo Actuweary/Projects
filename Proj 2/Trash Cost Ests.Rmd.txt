@@ -1,0 +1,180 @@
+---
+title: "DSC520 Final Project - Part III"
+author: "MICHAEL ERSEVIM"
+date: "Bellevue University, Fall 2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+# Introduction 
+
+Like many companies, Waste Management (WM) is looking to streamline its business processes in an attempt to reduce internal costs while improving the customer experience. Specifically, that experience is being able to request a price for a certain service that we, WM can’t provide without relying on the assistance of a third party, whose costs we don’t know upfront. Being able to estimate these costs quickly and accurately allows us to service a customer more quickly, improving their satisfaction, as well as reducing the manual workload of a client service representative. 
+  
+
+# The problem statement 
+
+The issue to be solved is one of predicting a cost that a third-party hauler (TPH) will charge our company for a service on our behalf. When a client requests a service that is in one of the locations where we can’t provide the service with our own trucks, this service must be passed along to a TPH. This TPH will then quote us a cost to do that service, and then we will get back to the client with a marked-up cost (aka ‘price’) to do that service. This introduces a long delay between requesting the service and receiving a price quote for that service. 
+
+
+# Addressing the issue  
+
+By utilizing predictive modeling, the costs (and subsequent prices) could be predicted and quoted to the customer instantly, allowing them to make an informed decision before authorizing the service. Ideally, the eventual costs of the procured service will be close to the modeled estimate. 
+
+The downside is that this introduces risk to WM. If the model estimates a TPH cost that is too low, we will lose money by having to honor the quote which was based on a cost that was not able to be procured or negotiated in the open market. On the other hand, if the model is biased too high, the resultant price may drive away customers or to utilize other trash service providers. 
+
+The balance of minimizing the variance of the estimates and not biasing the model too high or low puts this problem squarely in the hands of a data scientist. 
+ 
+
+# Analysis   
+
+The main dataset is proprietary WM client data saved as a ‘.csv’ file. It will be anonymized and only represent a reasonable subset (<2% of total database records) for practicality and proprietary concerns. What we ultimately want to get to is a reasonable cost for a Haul (H) and a disposal (DSP) for each county in a state.
+
+
+First we start by importing and shaping the raw data, making dates into dates and characters into factors for the regression later on.
+
+
+```{r}
+
+library(ggplot2)
+library(ggm)
+library(readxl)
+library(psych)
+library(useful)
+
+
+setwd("/Users/mersevim/OneDrive - Waste Management/Documents/GitHub/dsc520/data")
+#dir()
+
+## Load the WM dataset
+df <- read.csv("DSC520_Proj_WM_Data.csv", header = TRUE)
+df$StartEffDate<- as.Date(df$StartEffDate, format = "%m/%d/%Y")
+df$EndEffDate<- as.Date(df$EndEffDate, format = "%m/%d/%Y")
+df$County<-as.factor(df$County)
+df$State<-as.factor(df$State)
+df$Mat<-as.factor(df$Mat)
+df$Svc.Type<-as.factor(df$Svc.Type)
+df$Sched<-as.factor(df$Sched)
+df$TempOrPerm<-as.factor(df$TempOrPerm)
+df$Container<-as.factor(df$Container)
+df$Size<-as.factor(df$Size)
+#head(df)
+summary(df)
+#describe(df)
+dfgadsp<-df[df$State=='GA' & df$Mat=='T' & df$Svc.Type=='DSP',]
+#head(dfgadsp)
+#describe.by(df,'field')
+
+```
+
+
+
+
+
+Next, we'll pick a state (GA in this case) to look at the costs of DSP across zip codes.
+
+
+```{r}
+#Plots
+gdf <- ggplot(dfgadsp, aes(x=Zip, y=Cost))
+gdf + geom_point()
+```
+
+We see above that there are groupings or strata of costs. This is due to data entry errors. Many times in our industry, DSP costs are for 3 tons of material.
+
+The cost is supposed to be entered at the unit rate, not extended for 3 tons. The layer above the lower clusters are most likely these errors.
+
+If you imagine the upper layer divided by 3, you see they'd fall in line with the bottom layer. For now, we will pick a reasonable cutoff for DSP, say, $90.
+
+
+
+Next, we define and look at Haul (H) costs
+
+```{r}
+#narrow down to GA hauls or Trash only
+dfgah<-df[df$State=='GA' & df$Mat=='T' & df$Svc.Type=='H',] 
+
+gdf <- ggplot(dfgah, aes(x=Zip, y=Cost))
+gdf + geom_point()
+
+```
+
+
+Once again, there is a layer around $150 - $450. Other errors, like sometime including DSP costs with the Haul field creates some higher, unreasonable data points. We can select a cutoff of approximately $500.
+
+We can re-run the graphs after defining the cutoff amounts and re-check the graphs. Looks good:
+
+```{r}
+#Place limits
+dfgadsp<-dfgadsp[dfgadsp$Cost < 90,]
+dfgah<-dfgah[dfgah$Cost<500,]
+
+gdfh <- ggplot(dfgah, aes(x=Zip, y=Cost))
+gdfh + geom_point()
+
+gdfdsp <- ggplot(dfgadsp, aes(x=Zip, y=Cost))
+gdfdsp + geom_point()
+```
+Now we can run a very simple GLM to calculate relativities of costs from a base cost, across counties.
+Of course, we can add material type, container size, container type, schedule type, etc, - however, for this heuristic, we will simply 
+look at and calculate the county relativities.
+
+From the summary of the GA file, we use the most common county (highest counts) as the base or anchor. 
+It will by definition have a relativity factor of 1.000. From the summary, we see the county with the most data is 'Fulton'.
+It's base cost will be 'e' raised to the model coefficient.
+
+```{r}
+
+summary(dfgah)
+
+```
+Now we run the GLM and get the coefficient, and the county relativities. We simply add the county estimates to the intercept term before exponentiating to get the estimated cost for a Haul in that county.
+
+
+```{r}
+#set base county 
+dfgah$County = relevel(dfgah$County, ref = "Fulton")
+
+#Run simple Generalized lInear model
+GLM_GA_H <- (glm(formula = Cost ~ County , family=Gamma(link = "log"), data = dfgah))
+
+summary(GLM_GA_H)
+```
+If we want to only use model estimates for counties with asterisks, even better, since they indicate significance.
+Let's estimate the costs for both the base (Fulton) and Walton county:
+
+```{r}
+
+BaseCost = exp(5.76292)
+WaltonCost = exp(5.76292-0.68774)
+
+print(paste("Base:" , BaseCost))
+print(paste("Walton",WaltonCost))
+
+```
+As we can see, the cost for a Haul in Walton are nearly half of what Fulton county could expect.
+Note that Fulton does not show up in the list since its estimate would be '0', since it is being used as the reference or 'base' county.
+
+We can repeat or loop this process for every state and its collection of counties, or at least those counties which are significant or credible.
+Tables of costs can be built and uploaded into automated systems and results can be compared to costs that are ultimately procured in the open marketplace.
+
+Monitoring the performance of the cost estimates is crucial for building trust and confidence in the model.
+It is also great for learning important feedback for continually refining and tweaking the model.
+
+
+# Implications  
+
+The implications of implementing an automated system to predict costs for customers is huge. For other systems with similar anticipated speed-ups, customer satisfaction has been shown to jump by over 20 points. It also helps us to reallocate resources that have been over-taxed by repetitive tasks and hand-offs to other departments. The biggest time reduction, however, is that of not having to contact a vendor to procure a cost. This step alone can save DAYS in the process of gathering costs and ultimately, computing a price. 
+ 
+
+# Limitations  
+
+The most visible limitations to this process is that of coverage.  Reducing the scope of modeling to areas (zips, counties, etc.) where we have a credible amount of data makes sense. This is because we will have the most data in the areas we are most likely to have repeat business.  
+
+
+# Concluding Remarks   
+
+The issue WM faces regarding cost predictions is one ultimately of expediency. The ability to predict garbage service costs quickly and accurately is vital to better serving our customers and enhancing the bottom line. The ability to take raw data and ultimately build implementable business solutions is a top goal for data science in not just the waste industry, but for all industries. 
