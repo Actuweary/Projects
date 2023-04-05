@@ -1,0 +1,5 @@
+Overview:
+This was a project to predict costs of trash services by fitting a GLM to sample
+data from a database which has costs and attributes for each service provided.
+
+Detailed documentation already exists within the rmd file itself.
