@@ -1,0 +1,309 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import os"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import sqlite3 #import needed libraries\n",
+    "import pandas as pd"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "['.ipynb_checkpoints', 'candyhierarchy2017.csv', 'File.csv', 'MetObjects.txt', 'M_Ersevim_540_Wk_5_&_6.ipynb', 'M_ERSEVIM_DSC540_Milestome4_tk2.ipynb', 'M_Ersevim_DSC540_Milestone2.ipynb', 'M_ERSEVIM_DSC540_Milestone_3.ipynb', 'M_ERSEVIM_DSC540_Weeks10_12.ipynb', 'petsdb', 'SUB-IP-EST2019-ANNRESb.xlsx', 'Untitled.ipynb', 'Untitled1.ipynb']\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(os.listdir('.')) # OK, 'petsdb' is in there"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 31,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "with sqlite3.connect(\"petsdb\") as conn: #code same as in book\n",
+    "    cursor = conn.cursor()\n",
+    "    rows = cursor.execute(\"SELECT * FROM pets LIMIT 3\") #see if top three pront"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 32,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(57, 'mani', 1.0, 0)\n",
+      "(80, 'tamari', None, 0)\n",
+      "(25, 'raba', None, 0)\n"
+     ]
+    }
+   ],
+   "source": [
+    "for row in rows:\n",
+    "    print(row) #looks like the connection works!"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 33,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "There are 2 people aged 5\n",
+      "There are 1 people aged 6\n",
+      "There are 1 people aged 7\n",
+      "There are 3 people aged 8\n",
+      "There are 1 people aged 9\n",
+      "There are 2 people aged 11\n",
+      "There are 3 people aged 12\n",
+      "There are 1 people aged 13\n",
+      "There are 4 people aged 14\n",
+      "There are 2 people aged 16\n",
+      "There are 2 people aged 17\n",
+      "There are 3 people aged 18\n",
+      "There are 1 people aged 19\n",
+      "There are 3 people aged 22\n",
+      "There are 2 people aged 23\n",
+      "There are 3 people aged 24\n",
+      "There are 2 people aged 25\n",
+      "There are 1 people aged 27\n",
+      "There are 1 people aged 30\n",
+      "There are 3 people aged 31\n",
+      "There are 1 people aged 32\n",
+      "There are 1 people aged 33\n",
+      "There are 2 people aged 34\n",
+      "There are 3 people aged 35\n",
+      "There are 3 people aged 36\n",
+      "There are 1 people aged 37\n",
+      "There are 2 people aged 39\n",
+      "There are 1 people aged 40\n",
+      "There are 1 people aged 42\n",
+      "There are 2 people aged 44\n",
+      "There are 2 people aged 48\n",
+      "There are 1 people aged 49\n",
+      "There are 1 people aged 50\n",
+      "There are 2 people aged 51\n",
+      "There are 2 people aged 52\n",
+      "There are 2 people aged 53\n",
+      "There are 2 people aged 54\n",
+      "There are 1 people aged 58\n",
+      "There are 1 people aged 59\n",
+      "There are 1 people aged 60\n",
+      "There are 1 people aged 61\n",
+      "There are 2 people aged 62\n",
+      "There are 1 people aged 63\n",
+      "There are 2 people aged 65\n",
+      "There are 2 people aged 66\n",
+      "There are 1 people aged 67\n",
+      "There are 3 people aged 68\n",
+      "There are 1 people aged 69\n",
+      "There are 1 people aged 70\n",
+      "There are 4 people aged 71\n",
+      "There are 1 people aged 72\n",
+      "There are 5 people aged 73\n",
+      "There are 3 people aged 74\n"
+     ]
+    }
+   ],
+   "source": [
+    "for people, age in c.execute(\"SELECT count(*), age FROM persons GROUP BY age\"):\n",
+    "    print(\"There are {} people aged {}\".format(people, age)) #counts num of people by age"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 38,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "There are 5 people aged 73\n"
+     ]
+    }
+   ],
+   "source": [
+    "for people, age in c.execute(\"SELECT count(*), age FROM persons GROUP BY age order by count(*) desc limit 1\"):\n",
+    "    print(\"There are {} people aged {}\".format(people, age)) #counts num of people by age, sorted descending\n",
+    "# so 73 years old is largest group at 5"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 40,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(60,)\n"
+     ]
+    }
+   ],
+   "source": [
+    "lnin = c.execute(\"SELECT count(*) FROM persons WHERE last_name IS NULL\") #find and count where last name is null (lnin)\n",
+    "\n",
+    "for row in lnin:\n",
+    "    print(row)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 42,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "79 People have more than one pet\n"
+     ]
+    }
+   ],
+   "source": [
+    "#how many have more than one pet\n",
+    "mtop = c.execute(\"SELECT count(*) FROM (SELECT count(owner_id) FROM pets GROUP BY owner_id order by count(*))\")\n",
+    "\n",
+    "for row in mtop:\n",
+    "    print(\"{} People have more than one pet\".format(row[0]))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 43,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(36,)\n"
+     ]
+    }
+   ],
+   "source": [
+    "td = c.execute(\"SELECT count(*) FROM pets WHERE treatment_done = 1\") # how many pets got treatments \n",
+    "\n",
+    "for row in td:\n",
+    "    print(row)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 44,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(16,)\n"
+     ]
+    }
+   ],
+   "source": [
+    "tdptinn = c.execute(\"SELECT count(*) FROM pets WHERE treatment_done=1 AND pet_type IS NOT null\") #select statement expalins task...\n",
+    "\n",
+    "for row in tdptinn:\n",
+    "    print(row)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 48,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(49,)\n"
+     ]
+    }
+   ],
+   "source": [
+    "pfep = c.execute(\"SELECT count(*) FROM pets JOIN persons ON pets.owner_id = persons.id WHERE persons.city='east port'\")\n",
+    "\n",
+    "for row in pfep: #counting pets where owner is from east port\n",
+    "    print(row)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 46,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(11,)\n"
+     ]
+    }
+   ],
+   "source": [
+    "pfeppt = c.execute(\"SELECT count(*) FROM pets JOIN persons ON pets.owner_id = persons.id WHERE persons.city='east port' AND pets.treatment_done=1\")\n",
+    "\n",
+    "for row in pfeppt: #counting subset of pets that got treatments where owner is from east port\n",
+    "    print(row)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.4"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
