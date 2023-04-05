@@ -1,0 +1,3 @@
+This app uses an API to ping a weather server.
+It will return basic weather data based on the inputs
+ that you provide at the prompts.
